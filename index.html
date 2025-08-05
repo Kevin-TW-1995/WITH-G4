@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>羽球分隊工具</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 獎盃背景裝飾 */
+    .trophy-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.1;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .trophy {
+      position: absolute;
+      font-size: 60px;
+      color: gold;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .trophy:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+    .trophy:nth-child(2) { top: 20%; right: 15%; animation-delay: 2s; }
+    .trophy:nth-child(3) { bottom: 30%; left: 20%; animation-delay: 4s; }
+    .trophy:nth-child(4) { bottom: 15%; right: 10%; animation-delay: 1s; }
+    .trophy:nth-child(5) { top: 50%; left: 5%; animation-delay: 3s; }
+    .trophy:nth-child(6) { top: 40%; right: 5%; animation-delay: 5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .header .trophy-icon {
+      font-size: 3rem;
+      color: gold;
+      text-shadow: 2px 2px 8px rgba(255,215,0,0.5);
+    }
+
+    /* 分享功能 */
+    .share-section {
+      background: rgba(255,255,255,0.15);
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(10px);
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .share-section h3 {
+      color: white;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .share-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .share-url {
+      background: rgba(255,255,255,0.9);
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 25px;
+      min-width: 250px;
+      font-size: 0.9rem;
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .share-btn {
+      background: gold;
+      color: #333;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .share-btn:hover {
+      background: #ffd700;
+      transform: translateY(-2px);
+    }
+
+    .share-status {
+      color: white;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+
+    /* 分頁標籤 */
+    .tabs {
+      display: flex;
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px 15px 0 0;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 1rem 2rem;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .tab:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .tab.active {
+      background: rgba(255,255,255,0.2);
+      color: gold;
+      font-weight: bold;
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px;
+      height: 3px;
+      background: gold;
+      border-radius: 2px;
+    }
+
+    /* 內容區域 */
+    .content {
+      background: rgba(255,255,255,0.95);
+      border-radius: 0 0 20px 20px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* 玩家列表樣式 */
+    .player-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .player-item {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .player-item:hover {
+      background: rgba(102, 126, 234, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .player-item input[type="checkbox"] {
+      margin-right: 0.5rem;
+      transform: scale(1.2);
+      accent-color: #667eea;
+    }
+
+    .player-item label {
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .role-select {
+      margin-left: 0.5rem;
+      padding: 0.2rem 0.4rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    /* 按鈕樣式 */
+    .btn {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      margin-right: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(45deg, #28a745, #20c997);
+    }
+
+    .btn-warning {
+      background: linear-gradient(45deg, #ffc107, #fd7e14);
+    }
+
+    /* 結果顯示 */
+    .results {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 15px;
+      border-left: 5px solid #667eea;
+    }
+
+    .results h3 {
+      color: #667eea;
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+    }
+
+    .team-group, .match-group, .pair-group {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 0.8rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-left: 4px solid gold;
+    }
+
+    .team-name {
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+    }
+
+    .match-vs {
+      text-align: center;
+      font-weight: bold;
+      color: #764ba2;
+      margin: 0.5rem 0;
+    }
+
+    /* 比分記錄樣式 */
+    .match-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .winner-select {
+      padding: 0.3rem 0.8rem;
+      border: 2px solid #ddd;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      background: white;
+    }
+
+    .score-input {
+      width: 60px;
+      padding: 0.3rem 0.5rem;
+      border: 2px solid #ddd;
+      border-radius: 15px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .score-separator {
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    /* 自訂玩家欄位樣式 */
+    .custom-players {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .custom-player-item {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem;
+      background: rgba(118, 75, 162, 0.1);
+      border-radius: 8px;
+      gap: 0.5rem;
+    }
+
+    .custom-player-item input[type="text"] {
+      flex: 1;
+      padding: 0.4rem 0.8rem;
+      border: 2px solid #ddd;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .custom-player-item input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .custom-player-item input[type="checkbox"] {
+      transform: scale(1.2);
+      accent-color: #764ba2;
+    }
+
+    .custom-player-item label {
+      cursor: pointer;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    /* 隊伍顏色標示 */
+    .team-a-player {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .team-b-player {
+      color: #007bff;
+      font-weight: bold;
+    }
+
+    /* 戰力顯示 */
+    .power-indicator {
+      font-size: 0.8rem;
+      background: #ffc107;
+      color: #333;
+      padding: 0.1rem 0.4rem;
+      border-radius: 10px;
+      margin-left: 0.5rem;
+      font-weight: bold;
+    }
+
+    /* 匯出表格樣式 */
+    .export-view {
+      display: none;
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      margin-top: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .export-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #333;
+    }
+
+    .export-teams {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .export-team {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .export-team h4 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .export-team.team-a h4 {
+      color: #dc3545;
+    }
+
+    .export-team.team-b h4 {
+      color: #007bff;
+    }
+
+    .export-matches {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+
+    .export-match {
+      display: grid;
+      grid-template-columns: auto 1fr auto 1fr;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.8rem;
+      margin-bottom: 0.5rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .export-match-num {
+      font-weight: bold;
+      color: #667eea;
+      text-align: center;
+      min-width: 40px;
+    }
+
+    .export-vs {
+      font-weight: bold;
+      color: #764ba2;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+      
+      .header h1 {
+        font-size: 2rem;
+      }
+      
+      .tab {
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+      }
+      
+      .player-list {
+        grid-template-columns: 1fr;
+      }
+
+      .export-teams {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .export-match {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.5rem;
+      }
+
+      .share-controls {
+        flex-direction: column;
+      }
+
+      .share-url {
+        min-width: 200px;
+      }
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+      
+      .trophy-bg, .share-section, .tabs, .btn {
+        display: none !important;
+      }
+      
+      .export-view {
+        display: block !important;
+        box-shadow: none;
+        margin: 0;
+        padding: 1rem;
+      }
+      
+      .content {
+        background: white;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="trophy-bg">
+    <div class="trophy">🏆</div>
+    <div class="trophy">🥇</div>
+    <div class="trophy">🏆</div>
+    <div class="trophy">🥇</div>
+    <div class="trophy">🏆</div>
+    <div class="trophy">🥇</div>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <h1>
+        <span class="trophy-icon">🏆</span>
+        羽球分隊工具
+        <span class="trophy-icon">🏆</span>
+      </h1>
+      <p>羽球爭霸</p>
+    </div>
+
+    <!-- 分享功能 -->
+    <div class="share-section">
+      <h3>📱 分享給朋友即時觀看</h3>
+      <div class="share-controls">
+        <input type="text" class="share-url" id="shareUrl" readonly>
+        <button class="share-btn" onclick="copyShareUrl()">複製連結</button>
+        <button class="share-btn" onclick="generateQR()" style="background: #28a745;">生成QR碼</button>
+      </div>
+      <div class="share-status" id="shareStatus"></div>
+      <canvas id="qrCanvas" style="display: none; margin-top: 1rem;"></canvas>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('simple')">簡易分組</button>
+      <button class="tab" onclick="switchTab('team')">2隊PK</button>
+    </div>
+
+    <div class="content">
+      <!-- 簡易分組頁面 -->
+      <div id="simple" class="tab-content active">
+        <h3>請勾選出席人員：</h3>
+        <div class="player-list">
+          <div class="player-item">
+            <input type="checkbox" id="simple-player1" name="simple-players" value="楊傑堰">
+            <label for="simple-player1">楊傑堰</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player2" name="simple-players" value="王鈺婷">
+            <label for="simple-player2">王鈺婷</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player3" name="simple-players" value="林展夆">
+            <label for="simple-player3">林展夆</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player4" name="simple-players" value="張為順">
+            <label for="simple-player4">張為順</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player5" name="simple-players" value="彭為雍">
+            <label for="simple-player5">彭為雍</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player6" name="simple-players" value="傅敬元">
+            <label for="simple-player6">傅敬元</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player7" name="simple-players" value="鄭雯瑄">
+            <label for="simple-player7">鄭雯瑄</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player8" name="simple-players" value="陳福慶">
+            <label for="simple-player8">陳福慶</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player9" name="simple-players" value="洪亭昱">
+            <label for="simple-player9">洪亭昱</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player10" name="simple-players" value="魏展鎰">
+            <label for="simple-player10">魏展鎰</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player11" name="simple-players" value="趙仁瑋">
+            <label for="simple-player11">趙仁瑋</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="simple-player12" name="simple-players" value="黃世銘">
+            <label for="simple-player12">黃世銘</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+        </div>
+        
+        <h3 style="margin-top: 1.5rem;">自訂玩家：</h3>
+        <div class="custom-players">
+          <div class="custom-player-item">
+            <input type="text" id="simple-custom1" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="simple-custom-check1" name="simple-players" value="">
+            <label for="simple-custom-check1">加入</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="custom-player-item">
+            <input type="text" id="simple-custom2" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="simple-custom-check2" name="simple-players" value="">
+            <label for="simple-custom-check2">加入</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="custom-player-item">
+            <input type="text" id="simple-custom3" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="simple-custom-check3" name="simple-players" value="">
+            <label for="simple-custom-check3">加入</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="custom-player-item">
+            <input type="text" id="simple-custom4" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="simple-custom-check4" name="simple-players" value="">
+            <label for="simple-custom-check4">加入</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" onclick="generateSimpleTeams()">🎯 開始分組</button>
+        <div id="simple-results" class="results" style="display: none;">
+          <h3>分組結果</h3>
+          <div id="simple-results-content"></div>
+        </div>
+      </div>
+
+      <!-- 團隊對戰頁面 -->
+      <div id="team" class="tab-content">
+        <h3>請勾選出席人員：</h3>
+        <div class="player-list">
+          <div class="player-item">
+            <input type="checkbox" id="team-player1" name="team-players" value="楊傑堰">
+            <label for="team-player1">楊傑堰</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player2" name="team-players" value="王鈺婷">
+            <label for="team-player2">王鈺婷</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player3" name="team-players" value="林展夆">
+            <label for="team-player3">林展夆</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player4" name="team-players" value="張為順">
+            <label for="team-player4">張為順</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player5" name="team-players" value="彭為雍">
+            <label for="team-player5">彭為雍</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player6" name="team-players" value="傅敬元">
+            <label for="team-player6">傅敬元</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player7" name="team-players" value="鄭雯瑄">
+            <label for="team-player7">鄭雯瑄</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player8" name="team-players" value="陳福慶">
+            <label for="team-player8">陳福慶</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player9" name="team-players" value="洪亭昱">
+            <label for="team-player9">洪亭昱</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player10" name="team-players" value="魏展鎰">
+            <label for="team-player10">魏展鎰</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player11" name="team-players" value="趙仁瑋">
+            <label for="team-player11">趙仁瑋</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="player-item">
+            <input type="checkbox" id="team-player12" name="team-players" value="黃世銘">
+            <label for="team-player12">黃世銘</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+        </div>
+        
+        <h3 style="margin-top: 1.5rem;">自訂玩家：</h3>
+        <div class="custom-players">
+          <div class="custom-player-item">
+            <input type="text" id="team-custom1" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="team-custom-check1" name="team-players" value="">
+            <label for="team-custom-check1">加入分組</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="custom-player-item">
+            <input type="text" id="team-custom2" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="team-custom-check2" name="team-players" value="">
+            <label for="team-custom-check2">加入分組</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="custom-player-item">
+            <input type="text" id="team-custom3" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="team-custom-check3" name="team-players" value="">
+            <label for="team-custom-check3">加入分組</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+          <div class="custom-player-item">
+            <input type="text" id="team-custom4" placeholder="輸入姓名" maxlength="10">
+            <input type="checkbox" id="team-custom-check4" name="team-players" value="">
+            <label for="team-custom-check4">加入分組</label>
+            <select class="role-select">
+              <option value="">--</option>
+              <option value="球王">球王</option>
+              <option value="隊長">隊長</option>
+              <option value="副隊長">副隊長</option>
+              <option value="隊員">隊員</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="margin-right: 1.5rem;">
+            <input type="radio" name="match-count" value="5" checked style="margin-right: 0.5rem;">
+            5場對戰
+          </label>
+          <label style="margin-right: 1.5rem;">
+            <input type="radio" name="match-count" value="6" style="margin-right: 0.5rem;">
+            6場對戰
+          </label>
+          <label>
+            <input type="radio" name="match-count" value="7" style="margin-right: 0.5rem;">
+            7場對戰
+          </label>
+        </div>
+
+        <button class="btn" onclick="generateBalancedTeams()">⚖️ 平衡分組</button>
+        <button class="btn btn-secondary" onclick="generateMatches()" id="generateMatchesBtn" style="display: none;">⚔️ 產生對戰</button>
+        <button class="btn" onclick="regenerateTeams()" id="regenerateTeamsBtn" style="display: none; background: linear-gradient(45deg, #ff6b6b, #ee5a24);">🔄 重新分組</button>
+        <button class="btn btn-warning" onclick="regenerateMatches()" id="regenerateMatchesBtn" style="display: none;">🔄 新的一輪</button>
+
+        <div id="team-division-results" class="results" style="display: none;">
+          <h3>隊伍分組結果</h3>
+          <div id="team-division-content"></div>
+        </div>
+
+        <div id="team-results" class="results" style="display: none;">
+          <h3>對戰結果</h3>
+          <div id="team-results-content"></div>
+          <div style="text-align: center; margin-top: 1.5rem;">
+            <button class="btn btn-secondary" onclick="openExportWindow()">📋 匯出對戰表</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 匯出視圖 -->
+    <div id="export-view" class="export-view">
+      <div class="export-header">
+        <h2>🏸 羽球對戰表</h2>
+        <p id="export-date"></p>
+      </div>
+      
+      <div class="export-teams" id="export-teams">
+        <!-- 隊伍資訊將在這裡動態生成 -->
+      </div>
+      
+      <div class="export-matches">
+        <h3 style="text-align: center; margin-bottom: 1rem;">對戰安排</h3>
+        <div id="export-matches-content">
+          <!-- 對戰表將在這裡動態生成 -->
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 2rem;">
+        <button class="btn" onclick="closeExport()">返回</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全域變數儲存當前對戰資料
+    let currentBattleData = {
+      teamA: [],
+      teamB: [],
+      matches: [],
+      scores: {},
+      winners: {},
+      playerRoles: {}
+    };
+
+    // 戰力設定
+    const POWER_VALUES = {
+      '球王': 80,
+      '隊長': 60,
+      '副隊長': 40,
+      '隊員': 35,
+      '': 50 // 預設戰力
+    };
+
+    // 打亂陣列函數
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // 獲取玩家戰力
+    function getPlayerPower(playerName) {
+      const role = currentBattleData.playerRoles[playerName] || '';
+      return POWER_VALUES[role] || POWER_VALUES[''];
+    }
+
+    // 獲取玩家角色和戰力資訊
+    function getPlayerRoles() {
+      updateCustomPlayerValues('team');
+      
+      const roleMap = {};
+      const items = document.querySelectorAll('#team .player-list .player-item, #team .custom-players .custom-player-item');
+      
+      items.forEach(item => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        const select = item.querySelector('.role-select');
+        
+        if (checkbox && checkbox.checked && checkbox.value.trim()) {
+          const playerName = checkbox.value.trim();
+          const role = select ? select.value : '';
+          roleMap[playerName] = role;
+        }
+      });
+      
+      return roleMap;
+    }
+
+    // 平衡分組算法 - 加入隨機性
+    function generateBalancedTeams() {
+      const checked = Array.from(document.querySelectorAll('input[name="team-players"]:checked'));
+      const activePlayers = checked.map(cb => cb.value).filter(name => name.trim() !== '');
+      
+      if (activePlayers.length < 6) {
+        alert('請至少選擇六位玩家進行團體對戰。');
+        return;
+      }
+
+      // 獲取玩家角色
+      currentBattleData.playerRoles = getPlayerRoles();
+
+      // 計算每位玩家的戰力
+      const playersWithPower = activePlayers.map(name => ({
+        name: name,
+        role: currentBattleData.playerRoles[name] || '',
+        power: getPlayerPower(name)
+      }));
+
+      // 依戰力分組，但同戰力內隨機排序
+      const powerGroups = {};
+      playersWithPower.forEach(player => {
+        if (!powerGroups[player.power]) {
+          powerGroups[player.power] = [];
+        }
+        powerGroups[player.power].push(player);
+      });
+
+      // 對每個戰力組內的玩家進行隨機排序
+      Object.keys(powerGroups).forEach(power => {
+        shuffle(powerGroups[power]);
+      });
+
+      // 重新組合成依戰力排序的陣列（但同戰力內已隨機）
+      const shuffledPlayers = [];
+      const sortedPowers = Object.keys(powerGroups).map(Number).sort((a, b) => b - a);
+      sortedPowers.forEach(power => {
+        shuffledPlayers.push(...powerGroups[power]);
+      });
+
+      // 使用貪心算法進行平衡分組
+      let teamA = [], teamB = [];
+      let powerA = 0, powerB = 0;
+
+      // 分配玩家
+      shuffledPlayers.forEach(player => {
+        if (powerA <= powerB) {
+          teamA.push(player);
+          powerA += player.power;
+        } else {
+          teamB.push(player);
+          powerB += player.power;
+        }
+      });
+
+      // 優化：嘗試交換玩家以達到更好的平衡
+      let improved = true;
+      let attempts = 0;
+      while (improved && attempts < 100) { // 限制嘗試次數避免無限循環
+        improved = false;
+        attempts++;
+        const currentDiff = Math.abs(powerA - powerB);
+        
+        for (let i = 0; i < teamA.length; i++) {
+          for (let j = 0; j < teamB.length; j++) {
+            const newPowerA = powerA - teamA[i].power + teamB[j].power;
+            const newPowerB = powerB - teamB[j].power + teamA[i].power;
+            const newDiff = Math.abs(newPowerA - newPowerB);
+            
+            if (newDiff < currentDiff) {
+              // 交換玩家
+              [teamA[i], teamB[j]] = [teamB[j], teamA[i]];
+              powerA = newPowerA;
+              powerB = newPowerB;
+              improved = true;
+              break;
+            }
+          }
+          if (improved) break;
+        }
+      }
+
+// 檢查出賽場次衝突
+    function checkMatchConflicts(matches) {
+      const allPlayers = [...currentBattleData.teamA, ...currentBattleData.teamB];
+      const playerMatches = {};
+      
+      // 計算每位玩家的出賽場次
+      matches.forEach((match, matchIndex) => {
+        const gameNumber = matchIndex + 1;
+        match.teamA.forEach(player => {
+          if (!playerMatches[player]) playerMatches[player] = [];
+          playerMatches[player].push(gameNumber);
+        });
+        match.teamB.forEach(player => {
+          if (!playerMatches[player]) playerMatches[player] = [];
+          playerMatches[player].push(gameNumber);
+        });
+      });
+
+      // 檢查是否有玩家的出賽場次完全相同
+      const conflicts = [];
+      const matchSets = {};
+      
+      allPlayers.forEach(player => {
+        const matchSet = playerMatches[player] ? playerMatches[player].sort().join(',') : '';
+        if (matchSet) {
+          if (matchSets[matchSet]) {
+            matchSets[matchSet].push(player);
+          } else {
+            matchSets[matchSet] = [player];
+          }
+        }
+      });
+
+      // 找出有衝突的組合
+      Object.keys(matchSets).forEach(matchSet => {
+        if (matchSets[matchSet].length > 1) {
+          conflicts.push({
+            games: matchSet,
+            players: matchSets[matchSet]
+          });
+        }
+      });
+
+      return conflicts;
+    }
+
+    // 顯示衝突警告
+    function displayConflictWarning(conflicts) {
+      const warningDiv = document.getElementById('conflict-warning');
+      
+      if (conflicts.length === 0) {
+        warningDiv.style.display = 'none';
+        return;
+      }
+
+      let warningHtml = '<strong>⚠️ 出賽場次衝突警告：</strong><br>';
+      conflicts.forEach(conflict => {
+        const games = conflict.games.split(',').map(g => `G${g}`).join('、');
+        warningHtml += `• <strong>${conflict.players.join('、')}</strong> 的出賽場次完全相同 (${games})<br>`;
+      });
+      warningHtml += '<em>建議重新生成對戰安排以避免此問題</em>';
+      
+      warningDiv.innerHTML = warningHtml;
+      warningDiv.style.display = 'block';
+    }
+
+      // 儲存分組結果
+      currentBattleData.teamA = teamA.map(p => p.name);
+      currentBattleData.teamB = teamB.map(p => p.name);
+
+      // 顯示分組結果
+      displayTeamDivision(teamA, teamB, powerA, powerB);
+      
+      // 顯示生成對戰按鈕
+      document.getElementById('generateMatchesBtn').style.display = 'inline-block';
+      document.getElementById('regenerateTeamsBtn').style.display = 'inline-block';
+      
+      // 隱藏舊的對戰結果
+      document.getElementById('team-results').style.display = 'none';
+      
+      saveSharedData();
+    }
+
+    // 顯示隊伍分組結果
+    function displayTeamDivision(teamA, teamB, powerA, powerB) {
+      const resultsDiv = document.getElementById("team-division-content");
+      const resultsContainer = document.getElementById("team-division-results");
+      
+      resultsDiv.innerHTML = "";
+
+      // 顯示隊伍A
+      const teamADiv = document.createElement("div");
+      teamADiv.className = "team-group";
+      const teamAPlayers = teamA.map(player => {
+        const role = player.role || '';
+        const roleText = role ? ` (${role})` : '';
+        const powerIndicator = `<span class="power-indicator">${player.power}</span>`;
+        return `<span class="team-a-player">${player.name}</span>${roleText}${powerIndicator}`;
+      }).join('<br>');
+      
+      teamADiv.innerHTML = `
+        <div class="team-name">🔴 隊伍A (${teamA.length}人，總戰力: ${powerA})</div>
+        <div>${teamAPlayers}</div>
+      `;
+      resultsDiv.appendChild(teamADiv);
+
+      // 顯示隊伍B
+      const teamBDiv = document.createElement("div");
+      teamBDiv.className = "team-group";
+      const teamBPlayers = teamB.map(player => {
+        const role = player.role || '';
+        const roleText = role ? ` (${role})` : '';
+        const powerIndicator = `<span class="power-indicator">${player.power}</span>`;
+        return `<span class="team-b-player">${player.name}</span>${roleText}${powerIndicator}`;
+      }).join('<br>');
+      
+      teamBDiv.innerHTML = `
+        <div class="team-name">🔵 隊伍B (${teamB.length}人，總戰力: ${powerB})</div>
+        <div>${teamBPlayers}</div>
+      `;
+      resultsDiv.appendChild(teamBDiv);
+
+      // 顯示戰力分析
+      const analysisDiv = document.createElement("div");
+      analysisDiv.className = "team-group";
+      const powerDiff = Math.abs(powerA - powerB);
+      const balanceText = powerDiff <= 10 ? '✅ 非常平衡' : 
+                         powerDiff <= 20 ? '✅ 良好平衡' : 
+                         powerDiff <= 30 ? '⚠️ 稍有差距' : '❌ 差距較大';
+      
+      analysisDiv.innerHTML = `
+        <div class="team-name">📊 戰力分析</div>
+        <div>戰力差距: ${powerDiff} 分 - ${balanceText}</div>
+        <div style="margin-top: 0.5rem;">平均戰力: A隊 ${(powerA/teamA.length).toFixed(1)} vs B隊 ${(powerB/teamB.length).toFixed(1)}</div>
+      `;
+      resultsDiv.appendChild(analysisDiv);
+
+      resultsContainer.style.display = 'block';
+    }
+
+    // 生成對戰組合
+    function generateMatches() {
+      if (!currentBattleData.teamA.length || !currentBattleData.teamB.length) {
+        alert('請先進行平衡分組');
+        return;
+      }
+
+      const matchCountRadio = document.querySelector('input[name="match-count"]:checked');
+      const matchCount = parseInt(matchCountRadio.value);
+
+      // 生成平衡對戰配對
+      const matches = generateBalancedMatches(currentBattleData.teamA, currentBattleData.teamB, matchCount);
+      currentBattleData.matches = matches;
+      currentBattleData.scores = {};
+      currentBattleData.winners = {};
+
+      // 顯示對戰結果
+      displayMatchResults(matches);
+      
+      // 顯示再次生成對戰按鈕
+      document.getElementById('regenerateMatchesBtn').style.display = 'inline-block';
+      
+      saveSharedData();
+    }
+
+    // 再次生成對戰組合（保持相同隊伍）
+    function regenerateMatches() {
+      if (!currentBattleData.teamA.length || !currentBattleData.teamB.length) {
+        alert('請先進行平衡分組');
+        return;
+      }
+
+      const matchCountRadio = document.querySelector('input[name="match-count"]:checked');
+      const matchCount = parseInt(matchCountRadio.value);
+
+      // 使用不同的隨機種子重新生成對戰配對
+      const matches = generateBalancedMatches(currentBattleData.teamA, currentBattleData.teamB, matchCount, true);
+      currentBattleData.matches = matches;
+      currentBattleData.scores = {};
+      currentBattleData.winners = {};
+
+      // 顯示對戰結果
+      displayMatchResults(matches);
+      saveSharedData();
+    }
+
+    // 生成平衡對戰配對的核心算法 - 優先考慮出場次數平衡，張為順避免G1出賽
+    function generateBalancedMatches(teamA, teamB, matchCount, isRegenerate = false) {
+      const matches = [];
+      const playerCountA = {};
+      const playerCountB = {};
+      const pairHistoryA = new Set();
+      const pairHistoryB = new Set();
+      
+      // 初始化出場次數
+      teamA.forEach(player => playerCountA[player] = 0);
+      teamB.forEach(player => playerCountB[player] = 0);
+
+      // 生成所有可能的配對組合
+      const allPairsA = [];
+      const allPairsB = [];
+      
+      for (let i = 0; i < teamA.length; i++) {
+        for (let j = i + 1; j < teamA.length; j++) {
+          const pair = [teamA[i], teamA[j]];
+          const pairPower = getPlayerPower(pair[0]) + getPlayerPower(pair[1]);
+          allPairsA.push({ players: pair, power: pairPower });
+        }
+      }
+      
+      for (let i = 0; i < teamB.length; i++) {
+        for (let j = i + 1; j < teamB.length; j++) {
+          const pair = [teamB[i], teamB[j]];
+          const pairPower = getPlayerPower(pair[0]) + getPlayerPower(pair[1]);
+          allPairsB.push({ players: pair, power: pairPower });
+        }
+      }
+
+      // 如果是重新生成，打亂配對順序增加隨機性
+      if (isRegenerate) {
+        shuffle(allPairsA);
+        shuffle(allPairsB);
+      }
+
+      for (let matchIndex = 0; matchIndex < matchCount; matchIndex++) {
+        let bestMatch = null;
+        let bestScore = Infinity;
+
+        // 尋找最佳配對組合 - 優先考慮出場次數平衡
+        for (const pairA of allPairsA) {
+          const pairKeyA = pairA.players.slice().sort().join('-');
+          
+          for (const pairB of allPairsB) {
+            const pairKeyB = pairB.players.slice().sort().join('-');
+
+            // 張為順避免G1出賽的特殊規則
+            if (matchIndex === 0) { // G1
+              const hasZhangInA = pairA.players.includes('張為順');
+              const hasZhangInB = pairB.players.includes('張為順');
+              if (hasZhangInA || hasZhangInB) {
+                continue; // 跳過包含張為順的配對
+              }
+            }
+
+            // 計算戰力差距，避免過大差距（如160 vs 40）
+            const powerDiff = Math.abs(pairA.power - pairB.power);
+            if (powerDiff > 80) { // 避免戰力差距過大
+              continue;
+            }
+
+            // 計算出場次數差距（最高優先級）
+            const playCountA = (playerCountA[pairA.players[0]] || 0) + (playerCountA[pairA.players[1]] || 0);
+            const playCountB = (playerCountB[pairB.players[0]] || 0) + (playerCountB[pairB.players[1]] || 0);
+            const playCountScore = playCountA + playCountB; // 優先選擇出場次數少的組合
+            
+            // 配對重複懲罰（次要考量，但在重新生成時降低權重）
+            const pairRepeatWeight = isRegenerate ? 10 : 50;
+            const pairRepeatPenalty = (pairHistoryA.has(pairKeyA) ? pairRepeatWeight : 0) + (pairHistoryB.has(pairKeyB) ? pairRepeatWeight : 0);
+            
+            // 戰力差距（最低優先級）
+            const powerWeight = isRegenerate ? 1 : 0.1;
+            
+            // 綜合評分：出場次數 >> 配對重複 >> 戰力差距
+            const score = playCountScore * 1000 + pairRepeatPenalty + powerDiff * powerWeight;
+            
+            if (score < bestScore) {
+              bestScore = score;
+              bestMatch = {
+                teamA: [...pairA.players],
+                teamB: [...pairB.players],
+                powerA: pairA.power,
+                powerB: pairB.power,
+                powerDiff: Math.abs(pairA.power - pairB.power)
+              };
+            }
+          }
+        }
+
+        if (bestMatch) {
+          matches.push(bestMatch);
+          
+          // 記錄使用過的配對
+          const pairKeyA = bestMatch.teamA.slice().sort().join('-');
+          const pairKeyB = bestMatch.teamB.slice().sort().join('-');
+          pairHistoryA.add(pairKeyA);
+          pairHistoryB.add(pairKeyB);
+          
+          // 更新出場次數
+          bestMatch.teamA.forEach(player => playerCountA[player]++);
+          bestMatch.teamB.forEach(player => playerCountB[player]++);
+        }
+      }
+
+      return matches;
+    }
+
+    // 顯示對戰結果
+    function displayMatchResults(matches) {
+      const resultsDiv = document.getElementById("team-results-content");
+      const resultsContainer = document.getElementById("team-results");
+      
+      resultsDiv.innerHTML = "";
+
+      // 顯示對戰配對
+      const matchesDiv = document.createElement("div");
+      matchesDiv.innerHTML = `<div class="team-name">⚔️ 對戰安排 (共${matches.length}場)</div>`;
+      
+      matches.forEach((match, i) => {
+        const matchDiv = document.createElement("div");
+        matchDiv.className = "match-group";
+        matchDiv.innerHTML = `
+          <div>🏸 第 ${i + 1} 場</div>
+          <div>
+            <span class="team-a-player">${match.teamA[0]}</span> ＆ 
+            <span class="team-a-player">${match.teamA[1]}</span>
+            <span class="power-indicator">${match.powerA}</span>
+          </div>
+          <div class="match-vs">VS</div>
+          <div>
+            <span class="team-b-player">${match.teamB[0]}</span> ＆ 
+            <span class="team-b-player">${match.teamB[1]}</span>
+            <span class="power-indicator">${match.powerB}</span>
+          </div>
+          <div class="match-controls">
+            <select class="winner-select" onchange="updateWinner(${i}, this.value)">
+              <option value="">勝者</option>
+              <option value="A">A隊</option>
+              <option value="B">B隊</option>
+            </select>
+          </div>
+        `;
+        matchesDiv.appendChild(matchDiv);
+      });
+      
+      resultsDiv.appendChild(matchesDiv);
+
+      // 顯示出場統計
+      const statsDiv = document.createElement("div");
+      statsDiv.className = "team-group";
+      statsDiv.innerHTML = '<div class="team-name">📊 出場統計</div>';
+      
+      const playerStats = calculatePlayerStats(matches, currentBattleData.teamA, currentBattleData.teamB);
+      
+      // 計算出場次數統計
+      const playCountsA = currentBattleData.teamA.map(player => playerStats[player] || 0);
+      const playCountsB = currentBattleData.teamB.map(player => playerStats[player] || 0);
+      const allPlayCounts = [...playCountsA, ...playCountsB];
+      const minPlays = Math.min(...allPlayCounts);
+      const maxPlays = Math.max(...allPlayCounts);
+      const playDiff = maxPlays - minPlays;
+      
+      const balanceText = playDiff === 0 ? '✅ 完全平衡' : 
+                         playDiff === 1 ? '✅ 良好平衡 (最多相差1場)' : 
+                         '⚠️ 需要調整';
+      
+      ['A', 'B'].forEach(team => {
+        const teamPlayers = team === 'A' ? currentBattleData.teamA : currentBattleData.teamB;
+        const colorClass = team === 'A' ? 'team-a-player' : 'team-b-player';
+        const statsHtml = teamPlayers.map(player => {
+          const count = playerStats[player] || 0;
+          const role = currentBattleData.playerRoles[player] || '';
+          const roleText = role ? ` (${role})` : '';
+          return `<div><span class="${colorClass}">${player}</span>${roleText}: ${count}場</div>`;
+        }).join('');
+        
+        statsDiv.innerHTML += `
+          <div style="margin-top: 10px;">
+            <strong>隊伍${team}出場次數：</strong><br>
+            ${statsHtml}
+          </div>
+        `;
+      });
+      
+      // 顯示出場平衡度分析
+      statsDiv.innerHTML += `
+        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
+          <strong>出場平衡度：</strong><br>
+          出場次數範圍: ${minPlays} - ${maxPlays} 場 (相差${playDiff}場)<br>
+          ${balanceText}
+        </div>
+      `;
+      
+      resultsDiv.appendChild(statsDiv);
+      resultsContainer.style.display = 'block';
+    }
+
+    // 重新分組功能
+    function regenerateTeams() {
+      // 保持相同的玩家選擇，重新進行分組
+      generateBalancedTeams();
+    }
+
+    // 重新開始（完全重置）
+    function resetTeamBattle() {
+      currentBattleData = {
+        teamA: [],
+        teamB: [],
+        matches: [],
+        scores: {},
+        winners: {},
+        playerRoles: {}
+      };
+      
+      document.getElementById('team-division-results').style.display = 'none';
+      document.getElementById('team-results').style.display = 'none';
+      document.getElementById('generateMatchesBtn').style.display = 'none';
+      document.getElementById('regenerateTeamsBtn').style.display = 'none';
+      document.getElementById('regenerateMatchesBtn').style.display = 'none';
+      
+      saveSharedData();
+    }
+
+    // 更新勝者
+    function updateWinner(matchIndex, winner) {
+      currentBattleData.winners[matchIndex] = winner;
+      saveSharedData();
+    }
+
+    // 計算玩家統計
+    function calculatePlayerStats(matches, teamA, teamB) {
+      const stats = {};
+      
+      matches.forEach(match => {
+        match.teamA.forEach(player => {
+          stats[player] = (stats[player] || 0) + 1;
+        });
+        match.teamB.forEach(player => {
+          stats[player] = (stats[player] || 0) + 1;
+        });
+      });
+      
+      return stats;
+    }
+
+    // 生成分享URL和ID
+    function generateShareId() {
+      return 'badminton_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
+    }
+
+    // 初始化分享功能
+    function initShareUrl() {
+      const baseUrl = window.location.origin + window.location.pathname;
+      const shareId = generateShareId();
+      const shareUrl = baseUrl + '?share=' + shareId;
+      document.getElementById('shareUrl').value = shareUrl;
+      
+      // 檢查是否為分享觀看模式
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedId = urlParams.get('share');
+      
+      if (sharedId) {
+        // 觀看模式：隱藏操作按鈕，只顯示結果
+        document.body.classList.add('viewer-mode');
+        loadSharedData(sharedId);
+        
+        // 設定定期更新
+        setInterval(() => loadSharedData(sharedId), 3000);
+        
+        // 顯示觀看模式提示
+        updateShareStatus('正在觀看分享的對戰結果...');
+      }
+    }
+
+    // 複製分享連結
+    function copyShareUrl() {
+      const shareUrl = document.getElementById('shareUrl');
+      shareUrl.select();
+      shareUrl.setSelectionRange(0, 99999);
+      
+      try {
+        document.execCommand('copy');
+        updateShareStatus('連結已複製！朋友點擊連結即可即時觀看');
+      } catch (err) {
+        updateShareStatus('複製失敗，請手動複製連結');
+      }
+    }
+
+    // 生成QR碼
+    function generateQR() {
+      const shareUrl = document.getElementById('shareUrl').value;
+      const canvas = document.getElementById('qrCanvas');
+      const ctx = canvas.getContext('2d');
+      
+      canvas.width = 200;
+      canvas.height = 200;
+      canvas.style.display = 'block';
+      
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 200, 200);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(10, 10, 180, 180);
+      
+      ctx.fillStyle = '#000';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('QR碼功能', 100, 100);
+      ctx.fillText('請掃描觀看', 100, 120);
+      
+      updateShareStatus('QR碼已生成！朋友掃描即可觀看');
+    }
+
+    // 更新分享狀態
+    function updateShareStatus(message) {
+      const statusDiv = document.getElementById('shareStatus');
+      statusDiv.textContent = message;
+      statusDiv.style.color = '#90EE90';
+    }
+
+    // 儲存分享資料
+    function saveSharedData() {
+      const shareUrl = document.getElementById('shareUrl').value;
+      const shareId = shareUrl.split('share=')[1];
+      
+      if (shareId) {
+        const data = {
+          simpleResults: document.getElementById("simple-results").style.display === 'block' ? 
+            document.getElementById("simple-results-content").innerHTML : '',
+          teamDivisionResults: document.getElementById("team-division-results").style.display === 'block' ? 
+            document.getElementById("team-division-content").innerHTML : '',
+          teamResults: document.getElementById("team-results").style.display === 'block' ? 
+            document.getElementById("team-results-content").innerHTML : '',
+          battleData: currentBattleData,
+          timestamp: new Date().toISOString(),
+          activeTab: document.querySelector('.tab.active').textContent
+        };
+        
+        // 使用記憶體儲存
+        if (!window.sharedDataStore) {
+          window.sharedDataStore = {};
+        }
+        window.sharedDataStore[shareId] = data;
+        
+        updateShareStatus('資料已更新！朋友可以看到最新結果');
+      }
+    }
+
+    // 載入分享資料
+    function loadSharedData(shareId) {
+      if (window.sharedDataStore && window.sharedDataStore[shareId]) {
+        const data = window.sharedDataStore[shareId];
+        
+        // 切換到對應的標籤
+        if (data.activeTab === '簡易分組' && data.simpleResults) {
+          switchTab('simple');
+          document.getElementById("simple-results-content").innerHTML = data.simpleResults;
+          document.getElementById("simple-results").style.display = 'block';
+        } else if (data.activeTab === '2隊PK') {
+          switchTab('team');
+          
+          if (data.teamDivisionResults) {
+            document.getElementById("team-division-content").innerHTML = data.teamDivisionResults;
+            document.getElementById("team-division-results").style.display = 'block';
+            document.getElementById('generateMatchesBtn').style.display = 'inline-block';
+            document.getElementById('regenerateTeamsBtn').style.display = 'inline-block';
+          }
+          
+          if (data.teamResults) {
+            document.getElementById("team-results-content").innerHTML = data.teamResults;
+            document.getElementById("team-results").style.display = 'block';
+            document.getElementById('generateMatchesBtn').style.display = 'inline-block';
+            document.getElementById('regenerateTeamsBtn').style.display = 'inline-block';
+            document.getElementById('regenerateMatchesBtn').style.display = 'inline-block';
+          }
+          
+          currentBattleData = data.battleData;
+        }
+      }
+    }
+
+    // 分頁切換
+    function switchTab(tabName) {
+      const tabContents = document.querySelectorAll('.tab-content');
+      tabContents.forEach(content => content.classList.remove('active'));
+      
+      const tabs = document.querySelectorAll('.tab');
+      tabs.forEach(tab => tab.classList.remove('active'));
+      
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // 簡易分組功能
+    function generateSimpleTeams() {
+      updateCustomPlayerValues('simple');
+      
+      const checked = Array.from(document.querySelectorAll('input[name="simple-players"]:checked'));
+      const names = shuffle(checked.map(cb => cb.value).filter(name => name.trim() !== ''));
+      const resultsDiv = document.getElementById("simple-results-content");
+      const resultsContainer = document.getElementById("simple-results");
+      
+      resultsDiv.innerHTML = "";
+      
+      if (names.length < 2) {
+        resultsDiv.innerHTML = '<div class="team-group">請至少選擇兩位玩家。</div>';
+        resultsContainer.style.display = 'block';
+        saveSharedData();
+        return;
+      }
+
+      if (names.length % 2 === 0) {
+        names.forEach((name, idx) => {
+          if (idx % 2 === 0) {
+            const group = document.createElement("div");
+            group.className = "pair-group";
+            group.innerHTML = `
+              <div class="team-name">第${(idx / 2) + 1}組</div>
+              <div>${names[idx]} ＆ ${names[idx + 1]}</div>
+            `;
+            resultsDiv.appendChild(group);
+          }
+        });
+      } else {
+        names.forEach((name, idx) => {
+          const group = document.createElement("div");
+          group.className = "pair-group";
+          group.innerHTML = `<div>${idx + 1}. ${name}</div>`;
+          resultsDiv.appendChild(group);
+        });
+      }
+      
+      resultsContainer.style.display = 'block';
+      saveSharedData();
+    }
+
+    // 開啟匯出視窗 - 修正版本（加入出戰場次標註）
+    function openExportWindow() {
+      if (!currentBattleData.matches.length) {
+        alert('請先生成對戰安排');
+        return;
+      }
+
+      // 準備匯出內容
+      const currentDate = new Date().toLocaleDateString('zh-TW');
+      
+      // 計算每位隊員的出戰場次
+      const playerMatches = {};
+      currentBattleData.matches.forEach((match, i) => {
+        match.teamA.forEach(player => {
+          if (!playerMatches[player]) playerMatches[player] = [];
+          playerMatches[player].push(`G${i + 1}`);
+        });
+        match.teamB.forEach(player => {
+          if (!playerMatches[player]) playerMatches[player] = [];
+          playerMatches[player].push(`G${i + 1}`);
+        });
+      });
+      
+      // 生成隊伍資訊（姓名在最左側，加上出戰場次）
+      const teamAWithMatches = currentBattleData.teamA.map(player => {
+        const matches = playerMatches[player] ? playerMatches[player].join('、') : '';
+        return `${player}${matches ? `: ${matches}` : ''}`;
+      }).join('<br>');
+      
+      const teamBWithMatches = currentBattleData.teamB.map(player => {
+        const matches = playerMatches[player] ? playerMatches[player].join('、') : '';
+        return `${player}${matches ? `: ${matches}` : ''}`;
+      }).join('<br>');
+
+      // 開啟新視窗（針對手機優化 - 一頁顯示完整內容）
+      const isMobile = window.innerWidth <= 768;
+      const windowFeatures = isMobile ? 
+        'width=380,height=800,scrollbars=no,resizable=yes' : 
+        'width=400,height=700,scrollbars=yes';
+      
+      const newWindow = window.open('', '_blank', windowFeatures);
+      
+      if (newWindow) {
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="zh-Hant">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+            <title>羽球對戰表</title>
+            <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                font-family: 'Microsoft JhengHei', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                color: #333;
+                padding: 0.5rem;
+                overflow-x: hidden;
+              }
+              .export-container {
+                background: white;
+                border-radius: 10px;
+                padding: 0.8rem;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+                max-width: 100%;
+                margin: 0 auto;
+                min-height: calc(100vh - 1rem);
+                display: flex;
+                flex-direction: column;
+              }
+              .export-header {
+                text-align: center;
+                margin-bottom: 0.8rem;
+                color: #333;
+                position: relative;
+              }
+              .export-header h2 {
+                color: #667eea;
+                font-size: 1.3rem;
+                margin-bottom: 0.2rem;
+              }
+              .export-header p {
+                color: #666;
+                font-size: 0.85rem;
+              }
+              .export-date-right {
+                position: absolute;
+                top: 0;
+                right: 0;
+                font-size: 0.85rem;
+                color: #666;
+              }
+              
+              /* 緊湊的隊伍顯示 */
+              .export-teams {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+                margin-bottom: 0.8rem;
+              }
+              .export-team {
+                background: #f8f9fa;
+                padding: 0.6rem;
+                border-radius: 8px;
+                text-align: left;
+                border: 1px solid #ddd;
+              }
+              .export-team h4 {
+                margin-bottom: 0.4rem;
+                font-size: 0.9rem;
+                font-weight: bold;
+                text-align: center;
+              }
+              .export-team.team-a h4 {
+                color: #dc3545;
+              }
+              .export-team.team-b h4 {
+                color: #007bff;
+              }
+              .export-team div {
+                line-height: 1.3;
+                font-size: 0.75rem;
+              }
+              
+              /* 超緊湊的對戰顯示 */
+              .export-matches {
+                background: #f8f9fa;
+                padding: 0.6rem;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+                flex: 1;
+                overflow-y: auto;
+              }
+              .export-match {
+                background: white;
+                border-radius: 6px;
+                padding: 0.5rem;
+                margin-bottom: 0.4rem;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                border: 1px solid #eee;
+              }
+              .export-match-num {
+                font-weight: bold;
+                color: #667eea;
+                text-align: center;
+                font-size: 0.8rem;
+                margin-bottom: 0.4rem;
+                background: #f0f0f0;
+                padding: 0.2rem;
+                border-radius: 4px;
+              }
+              .export-teams-row {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                gap: 0.3rem;
+                align-items: center;
+                text-align: center;
+              }
+              .export-team-red {
+                color: #dc3545;
+                font-weight: bold;
+                font-size: 0.75rem;
+                line-height: 1.2;
+                padding: 0.3rem;
+                background: #ffe6e6;
+                border-radius: 4px;
+                border: 1px solid #ffcccc;
+              }
+              .export-team-blue {
+                color: #007bff;
+                font-weight: bold;
+                font-size: 0.75rem;
+                line-height: 1.2;
+                padding: 0.3rem;
+                background: #e6f3ff;
+                border-radius: 4px;
+                border: 1px solid #cce7ff;
+              }
+              .export-vs {
+                font-weight: bold;
+                color: #764ba2;
+                font-size: 0.7rem;
+                background: #f0f0f0;
+                padding: 0.2rem;
+                border-radius: 50%;
+                width: 25px;
+                height: 25px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto;
+              }
+              .btn {
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                padding: 0.6rem 1rem;
+                border-radius: 25px;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+                width: 100%;
+                margin-top: 0.5rem;
+                flex-shrink: 0;
+              }
+              .btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+              }
+              .btn:active {
+                transform: translateY(0);
+              }
+              
+              /* 確保內容適應螢幕高度 */
+              @media (max-height: 700px) {
+                .export-container {
+                  padding: 0.5rem;
+                }
+                .export-header {
+                  margin-bottom: 0.5rem;
+                }
+                .export-header h2 {
+                  font-size: 1.1rem;
+                }
+                .export-teams {
+                  margin-bottom: 0.5rem;
+                }
+                .export-team {
+                  padding: 0.4rem;
+                }
+                .export-team h4 {
+                  font-size: 0.8rem;
+                  margin-bottom: 0.3rem;
+                }
+                .export-team div {
+                  font-size: 0.7rem;
+                }
+                .export-matches {
+                  padding: 0.4rem;
+                }
+                .export-match {
+                  padding: 0.3rem;
+                  margin-bottom: 0.3rem;
+                }
+                .export-match-num {
+                  font-size: 0.7rem;
+                  margin-bottom: 0.3rem;
+                  padding: 0.1rem;
+                }
+                .export-team-red,
+                .export-team-blue {
+                  font-size: 0.65rem;
+                  padding: 0.2rem;
+                }
+                .export-vs {
+                  font-size: 0.6rem;
+                  width: 20px;
+                  height: 20px;
+                }
+                .btn {
+                  padding: 0.5rem;
+                  font-size: 0.8rem;
+                }
+              }
+              
+              @media print {
+                body {
+                  background: white;
+                  padding: 1rem;
+                }
+                .btn {
+                  display: none !important;
+                }
+                .export-container {
+                  box-shadow: none;
+                  min-height: auto;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="export-container">
+              <div class="export-header">
+                <h2>🏸 羽球對戰表</h2>
+                <p class="export-date-right">${currentDate}</p>
+              </div>
+              
+              <div class="export-teams">
+                <div class="export-team team-a">
+                  <h4>🔴 隊伍A</h4>
+                  <div>${teamAWithMatches}</div>
+                </div>
+                <div class="export-team team-b">
+                  <h4>🔵 隊伍B</h4>
+                  <div>${teamBWithMatches}</div>
+                </div>
+              </div>
+              
+              <div class="export-matches">
+                ${currentBattleData.matches.map((match, i) => `
+                  <div class="export-match">
+                    <div class="export-match-num">🏸 第${i + 1}場</div>
+                    <div class="export-teams-row">
+                      <div class="export-team-red">${match.teamA.join(' & ')}</div>
+                      <div class="export-vs">VS</div>
+                      <div class="export-team-blue">${match.teamB.join(' & ')}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              
+              <button class="btn" onclick="window.close()">關閉視窗</button>
+            </div>
+          </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        alert('無法開啟新視窗，請確認瀏覽器未封鎖彈出視窗。');
+      }
+    }
+
+    // 關閉匯出視圖（原本的內嵌匯出功能，現在不再使用）
+    function closeExport() {
+      const exportView = document.getElementById('export-view');
+      const container = document.querySelector('.container');
+      
+      if (exportView && container) {
+        exportView.style.display = 'none';
+        container.style.display = 'block';
+        window.scrollTo(0, 0);
+      }
+    }
+
+    // 更新自訂玩家的值
+    function updateCustomPlayerValues(tabType) {
+      for (let i = 1; i <= 4; i++) {
+        const textInput = document.getElementById(`${tabType}-custom${i}`);
+        const checkbox = document.getElementById(`${tabType}-custom-check${i}`);
+        
+        if (textInput && checkbox) {
+          const name = textInput.value.trim();
+          if (name) {
+            checkbox.value = name;
+            if (!checkbox.checked) {
+              checkbox.checked = true;
+            }
+          } else {
+            checkbox.value = '';
+            checkbox.checked = false;
+          }
+        }
+      }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initShareUrl();
+      
+      // 為所有自訂輸入框添加事件監聽器
+      for (let tabType of ['simple', 'team']) {
+        for (let i = 1; i <= 4; i++) {
+          const textInput = document.getElementById(`${tabType}-custom${i}`);
+          const checkbox = document.getElementById(`${tabType}-custom-check${i}`);
+          
+          if (textInput && checkbox) {
+            textInput.addEventListener('input', function() {
+              const name = this.value.trim();
+              checkbox.value = name;
+              if (name && !checkbox.checked) {
+                checkbox.checked = true;
+              } else if (!name) {
+                checkbox.checked = false;
+              }
+            });
+          }
+        }
+      }
+      
+      // 觀看模式樣式調整
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('share')) {
+        // 隱藏不必要的操作元素
+        const elementsToHide = document.querySelectorAll('.player-list, .custom-players, h3:not(.results h3), .btn:not([onclick*="close"])');
+        elementsToHide.forEach(el => {
+          if (!el.closest('.results')) {
+            el.style.display = 'none';
+          }
+        });
+        
+        // 添加觀看者標識
+        const header = document.querySelector('.header p');
+        if (header) {
+          header.textContent = '即時觀看模式 - 自動更新中...';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
