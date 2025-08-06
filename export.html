@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>羽球對戰表</title>
+  <style>
+    body {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      background: #f5f5f5;
+      padding: 1rem;
+      color: #333;
+    }
+    .export-container {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #764ba2;
+      margin-bottom: 1rem;
+    }
+    .info {
+      font-size: 0.9rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #888;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-database.js"></script>
+</head>
+<body>
+  <div class="export-container">
+    <h1>🏸 羽球對戰表</h1>
+    <div class="info">由原頁面產生，透過 Firebase 跨裝置分享</div>
+    <div id="exportContent">載入中...</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCC4OQO_j8eUDOX1DM4qhxyfFtUtNlTvH4",
+      authDomain: "adminton-export.firebaseapp.com",
+      databaseURL: "https://adminton-export-default-rtdb.firebaseio.com",
+      projectId: "adminton-export",
+      storageBucket: "adminton-export.firebasestorage.app",
+      messagingSenderId: "143600658825",
+      appId: "1:143600658825:web:1287b7c02f36d291281958",
+      measurementId: "G-DKSEGGFQ34"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const contentDiv = document.getElementById('exportContent');
+
+    if (id) {
+      firebase.database().ref('exports/' + id).once('value')
+        .then(snapshot => {
+          const data = snapshot.val();
+          if (data && data.html) {
+            contentDiv.innerHTML = data.html;
+          } else {
+            contentDiv.innerHTML = '⚠️ 找不到此對戰表資料';
+          }
+        })
+        .catch(err => {
+          contentDiv.innerHTML = '⚠️ 載入資料時發生錯誤';
+          console.error(err);
+        });
+    } else {
+      contentDiv.innerText = '❌ 無效的網址參數';
+    }
+  </script>
+</body>
+</html>
